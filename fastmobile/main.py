@@ -1,14 +1,11 @@
 # todo:
 # - in dev: reload app, not reinstall
 # - styling
-#   - text color applied to body doesn't seem to propagate?
 #   - default styling for doc
 #   - easier styling
 #   - possible to define styles in a component? otherwise components not possible
-#   - css-calc?
 #   - styling: err as state, like focused?
 #   - convencience for borderColor, similar to margin/padding?
-# - svg support?
 # - auto add navigator (when?)
 # - aid static file checker via adding .pyi file?
 # - local caching?
