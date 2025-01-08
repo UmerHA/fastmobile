@@ -8,9 +8,10 @@
 #   - css-calc?
 #   - styling: err as state, like focused?
 #   - convencience for borderColor, similar to margin/padding?
-# - hxml can't display svgs?
-# - auto add: Doc tag (when?), navigator (when?)
+# - svg support?
+# - auto add navigator (when?)
 # - aid static file checker via adding .pyi file?
+# - local caching?
 
 import types, inspect
 from anyio import to_thread
@@ -18,7 +19,15 @@ from functools import partial, wraps
 from fastcore.basics import patch, camel2words
 from fastcore.xml import to_xml, FT, _flatten_tuple
 from starlette.responses import Response
-from fasthtml.common import FastHTML, serve, fast_app
+from fasthtml.common import *
+import fasthtml.core as fhcore
+
+# # Helpers
+def patch_module(mod):
+    def _inner(f):
+        setattr(mod, f.__name__, f)
+        return f
+    return _inner
 
 # # Create tags
 def _fix_k(o): return o.lstrip('_').replace('_','-')
@@ -85,29 +94,34 @@ margin  = partial(_spacing, 'margin')
 padding = partial(_spacing, 'padding')
 
 # # Return xml
-def XMLResponse(o):
-    o.xmlns = 'https://hyperview.org/hyperview'
+def XMLResponse(o, *a, **kw):
     o = '<?xml version="1.0" encoding="UTF-8"?>' + to_xml(o)
-    return Response(o, media_type='application/xml')
+    return Response(o, *a, media_type='application/xml', **kw)
 
-def make_xml_response(f):
-    @wraps(f)
-    async def _f(*a, **kw):
-        o = await (f(*a, **kw) if inspect.iscoroutinefunction(f) else to_thread.run_sync(f, *a, **kw))
-        return XMLResponse(o) if isinstance(o, FT) else o
-    return _f
+@patch_module(fhcore)
+def _xt_resp(req, resp):
+    cts,http_hdrs,tasks = _xt_cts(req, resp)
+    return XMLResponse(cts, headers=http_hdrs, background=tasks)
 
-@patch
-def route(self:FastHTML, path:str=None, methods=None, name=None, include_in_schema=True, body_wrap=None):
-    "Add a route at `path`"
-    def f(func): 
-        func = make_xml_response(func)
-        return self._add_route(func, path, methods, name=name, include_in_schema=include_in_schema, body_wrap=body_wrap)
-    return f(path) if callable(path) else f
+def is_fragment_request(req): return 'fragment' in req.headers['accept']
+def is_full_doc(o): return len(o)==1 and o[0].tag=='doc'
 
-# # Other
-@patch
-def append(self:FT, c):
-    self.children = self.children + (c,)
+@patch_module(fhcore)
+def _xt_cts(req, resp):
+    resp = flat_tuple(resp) # why did we need this?
+    resp = resp + tuple(getattr(req, 'injects', ()))
+    http_hdrs,resp = partition(resp, risinstance(HttpHeader))
+    http_hdrs = {o.k:str(o.v) for o in http_hdrs}
+    tasks,bdy = partition(resp, risinstance(BackgroundTask))
+    ts = BackgroundTasks()
+    for t in tasks: ts.tasks.append(t)
+    if resp and not is_fragment_request(req) and not is_full_doc(resp):
+        # todo: build support for header/footer back in. how do these relate to screen?
+        if not any(getattr(o, 'tag', '')=='screen' for o in bdy): bdy = Screen(*bdy)
+        resp = Doc(bdy, **req.htmlkw)
+    else:
+        resp = View(*resp) if len(resp)>1 else resp[0]
+    resp.xmlns='https://hyperview.org/hyperview'
+    return fhcore._to_xml(req, resp, indent=fh_cfg.indent), http_hdrs, ts
 
 __all__ = tags + ['WhenFocused', 'StackNav', 'fast_app', 'serve']
