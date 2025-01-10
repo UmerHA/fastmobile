@@ -45,9 +45,15 @@ def _wrap_str(c,kw):
     c = tuple(Text(o) if isinstance(o,str) else o for o in c) 
     return c,kw
 
+def _parse_style_dict(c,kw):
+    if not (kw == {} and len(c)==1 and isinstance(c[0],dict)): return c,kw
+    return tuple(Style(k, **v) for k,v in c[0].items()), {}
+
 def _preproc(t, c, kw):
     if len(c)==1 and isinstance(c[0], (types.GeneratorType, map, filter)): c = tuple(c[0])
     kw = {_fix_k(k): _fix_v(v) for k,v in kw.items()}
+    if t=='styles':
+        c, kw = _parse_style_dict(c,kw)
     if t=='style':
         c, kw = _id_from_str(c,kw)
         c, kw = _expand_margin_padding(c,kw)        
@@ -77,6 +83,7 @@ for o in tags: _g[o] = partial(ft_hxml, hxml_name(o))
 # # Convenience functions
 def WhenFocused(**kw): return Modifier(focused='true')(Style(**kw))
 def StackNav(*c): return Navigator(_id='root', type='stack')(*c)
+def TabNav(*c):   return Navigator(_id='root', type='tab')  (*c)
 
 def _expand_spacing(s):
     xs = str(s).split()
@@ -118,7 +125,8 @@ def _xt_cts(req, resp):
         resp = Doc(bdy, **req.htmlkw)
     else:
         resp = View(*resp) if len(resp)>1 else resp[0]
+    if hasattr(resp,'__ft__'): resp = resp.__ft__()
     resp.xmlns='https://hyperview.org/hyperview'
     return fhcore._to_xml(req, resp, indent=fh_cfg.indent), http_hdrs, ts
 
-__all__ = tags + ['WhenFocused', 'StackNav', 'fast_app', 'serve']
+__all__ = tags + ['WhenFocused', 'StackNav', 'TabNav', 'fast_app', 'serve']
