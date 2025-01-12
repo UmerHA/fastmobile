@@ -49,19 +49,21 @@ def _parse_style_dict(c,kw):
     if not (kw == {} and len(c)==1 and isinstance(c[0],dict)): return c,kw
     return tuple(Style(k, **v) for k,v in c[0].items()), {}
 
+def _expand_src(c,kw):
+        src = kw.pop('src',None)
+        if src: kw['source'] = src
+        return c,kw
+
 def _preproc(t, c, kw):
     if len(c)==1 and isinstance(c[0], (types.GeneratorType, map, filter)): c = tuple(c[0])
     kw = {_fix_k(k): _fix_v(v) for k,v in kw.items()}
-    if t=='styles':
-        c, kw = _parse_style_dict(c,kw)
-    if t=='style':
-        c, kw = _id_from_str(c,kw)
-        c, kw = _expand_margin_padding(c,kw)        
-    if t!='text': 
-        c, kw = _wrap_str(c,kw)
-    if t=='image':
-        src = kw.pop('src',None)
-        if src: kw['source'] = src
+    tfms = {
+        'styles': [_parse_style_dict],
+        'style':  [_id_from_str, _expand_margin_padding],
+        'image':  [_expand_src],
+    }
+    tfms = tfms.get(t, []) + ([_wrap_str] if t!='text' else [])
+    for o in tfms: c, kw = o(c, kw)
     return _flatten_tuple(c),kw
 
 def ft_hxml(t, *c, **kw): return FT(t,*_preproc(t,c,kw))
