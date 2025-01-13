@@ -1,5 +1,4 @@
 # todo:
-# - in dev: reload app, not reinstall
 # - styling
 #   - default styling for doc
 #   - easier styling
@@ -7,17 +6,17 @@
 #   - styling: err as state, like focused?
 #   - convencience for borderColor, similar to margin/padding?
 # - auto add navigator (when?)
-# - aid static file checker via adding .pyi file?
 # - local caching?
 
-import types, inspect
-from anyio import to_thread
-from functools import partial, wraps
-from fastcore.basics import patch, camel2words
+import types
+from functools import partial
+from pathlib import Path
+from fastcore.basics import camel2words
 from fastcore.xml import to_xml, FT, _flatten_tuple
 from starlette.responses import Response
 from fasthtml.common import *
 import fasthtml.core as fhcore
+
 
 # # Helpers
 def patch_module(mod):
@@ -30,29 +29,36 @@ def patch_module(mod):
 def _fix_k(o): return o.lstrip('_').replace('_','-')
 def _fix_v(o): return str(o).lower() if isinstance(o,bool) else o
 
-def _id_from_str(c,kw):
+def _id_from_str(t,c,kw):
     if len(c)>0 and isinstance(c[0], str): kw['id'],c = c[0],c[1:]
-    return c,kw
+    return t,c,kw
 
-def _expand_margin_padding(c, kw):
+def _expand_margin_padding(t,c, kw):
     m,p = kw.pop('margin', None), kw.pop('padding', None)
     m = margin(m)  if m else {}
     p = padding(p) if p else {}
-    return c, {**kw, **m, **p}
+    return t,c, {**kw, **m, **p}
 
-def _wrap_str(c,kw):
-    if not any(isinstance(o,str) for o in c): return c,kw
+def _wrap_str(t,c,kw):
+    if not any(isinstance(o,str) for o in c): return t,c,kw
     c = tuple(Text(o) if isinstance(o,str) else o for o in c) 
-    return c,kw
+    return t,c,kw
 
-def _parse_style_dict(c,kw):
-    if not (kw == {} and len(c)==1 and isinstance(c[0],dict)): return c,kw
-    return tuple(Style(k, **v) for k,v in c[0].items()), {}
+def _parse_style_dict(t,c,kw):
+    if not (kw == {} and len(c)==1 and isinstance(c[0],dict)): return t,c,kw
+    return t,tuple(Style(k, **v) for k,v in c[0].items()), {}
 
-def _expand_src(c,kw):
+def _expand_src(t,c,kw):
         src = kw.pop('src',None)
         if src: kw['source'] = src
-        return c,kw
+        return t,c,kw
+
+def _parse_svg(t,c,kw):
+    if not kw['source'].endswith('.svg'): return t,c,kw
+    src = kw.pop('source')
+    if src.startswith('/'): src = src[1:] # relative path on server
+    svg = Path(src).read_text()
+    return 'view',(NotStr(svg),)+c,kw
 
 def _preproc(t, c, kw):
     if len(c)==1 and isinstance(c[0], (types.GeneratorType, map, filter)): c = tuple(c[0])
@@ -60,13 +66,13 @@ def _preproc(t, c, kw):
     tfms = {
         'styles': [_parse_style_dict],
         'style':  [_id_from_str, _expand_margin_padding],
-        'image':  [_expand_src],
+        'image':  [_expand_src, _parse_svg],
     }
-    tfms = tfms.get(t, []) + ([_wrap_str] if t!='text' else [])
-    for o in tfms: c, kw = o(c, kw)
-    return _flatten_tuple(c),kw
+    tfms = tfms.get(t, []) + ([_wrap_str] if t not in ['text','image'] else [])
+    for o in tfms: t, c, kw = o(t, c, kw)
+    return t, _flatten_tuple(c),kw
 
-def ft_hxml(t, *c, **kw): return FT(t,*_preproc(t,c,kw))
+def ft_hxml(t, *c, **kw): return FT(*_preproc(t,c,kw))
 
 def hxml_name(o):
     if o=='Img': o='Image'
