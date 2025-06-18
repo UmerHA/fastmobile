@@ -1,6 +1,10 @@
-# FastMobile 📱
+# FastMobile 🐍📱
 
-Server‑driven mobile apps in **pure Python**, powered by [Hyperview](https://hyperview.org) and Answer.AI’s [FastHTML](https://github.com/AnswerDotAI/fasthtml). Build native‑feeling screens by returning XML from a Starlette/FastAPI server – the Hyperview client renders the rest.([hyperview.org](https://hyperview.org/?utm_source=chatgpt.com), [github.com](https://github.com/AnswerDotAI/fasthtml?utm_source=chatgpt.com))
+> Server‑driven cross-platform mobile apps in **pure Python**
+
+FastMobile lets you write your mobile app declaratively in Python. FastMobile converts your app to [HXML](https://hyperview.org/docs/guide_html), and [Hyperview](https://hyperview.org/) does the rest, turning your HXML into React Native.
+
+FastMobile is based on [FastHTML](https://github.com/AnswerDotAI/fasthtml). In fact, it's only a slight adaptation of FastHTML to make it work with Hyperview, unlocking mobile as well.
 
 ---
 
@@ -9,6 +13,8 @@ Server‑driven mobile apps in **pure Python**, powered by [Hyperview](https://h
 * **Write once, run everywhere.** Describe your UI in Python; Hyperview renders it on iOS & Android.
 * **Keep business logic on the server.** Push fixes instantly, ship without App‑Store waits.
 * **Tiny learning curve.** If you know HTML or React Native’s Flexbox, you’re good.
+
+
 
 ---
 
