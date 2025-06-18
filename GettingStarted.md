@@ -48,9 +48,10 @@ You can verify the server is running by visiting `http://127.0.0.1:8085/` in you
 
 ## Step 2 - Install and start the viewer
 
-todo umer: install & run expo
+We recommend using Expo Orbit. Visit https://expo.dev/orbit to download and install it.
 
-
+Once installed, use the UI to start an emulator.
+The Hyperview client which we start below will run as an app on the emulator.
 
 ## Step 3 - Setup the Hyperview client
 
