@@ -28,7 +28,7 @@ serve(port=8085)
 
 ## 3. Why FastMobile?
 
-As [Hyperview docs](https://hyperview.org/docs/guide_introduction) notes, developing for mobile is slow and painful compared to the web. To quote them:
+As the [Hyperview docs](https://hyperview.org/docs/guide_introduction) notes, developing for mobile is slow and painful compared to the web:
 
 > On mobile:
 >- we released code once a week,
@@ -40,7 +40,7 @@ As [Hyperview docs](https://hyperview.org/docs/guide_introduction) notes, develo
 >- all of our users always saw our updates immediately,
 >- developers could build new features quickly by working in a single codebase.
 
-Hyperview solves this allowing you to write server-first mobile apps. FastMobile makes this more convenient, because you can write Python and don't have to manually construct HXML.
+Hyperview solves this by allowing you to write server-first mobile apps. FastMobile makes this more convenient, because you can write Python and don't have to manually construct HXML.
 
 ## 4. FAQ
 
