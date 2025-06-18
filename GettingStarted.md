@@ -39,7 +39,7 @@ serve(port=8085)
 
 Note the port `8085`. We'll use this later.
 
-Now start the server.
+Finally, start the server.
 ```bash
 python app.py
 ```
