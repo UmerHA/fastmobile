@@ -62,9 +62,9 @@ def _parse_style_dict(t,c,kw):
     return t,tuple(Style(k, **v) for k,v in c[0].items()), {}
 
 def _expand_src(t,c,kw):
-        src = kw.pop('src',None)
-        if src: kw['source'] = src
-        return t,c,kw
+    src = kw.pop('src',None)
+    if src: kw['source'] = src
+    return t,c,kw
 
 def _parse_svg(t,c,kw):
     if not kw['source'].endswith('.svg'): return t,c,kw
@@ -106,9 +106,9 @@ tags = [
 for o in tags: globals()[o] = partial(ft_hxml, hxml_name(o))
 
 # # Convenience functions
-def WhenFocused(**kw):  return Modifier(focused='true') (Style(**kw))
+def WhenFocused (**kw): return Modifier(focused ='true')(Style(**kw))
 def WhenSelected(**kw): return Modifier(selected='true')(Style(**kw))
-def WhenPressed(**kw):  return Modifier(pressed='true')(Style(**kw))
+def WhenPressed (**kw): return Modifier(pressed ='true')(Style(**kw))
 def StackNav(*c): return Navigator(_id='root', type='stack')(*c)
 def TabNav(*c):   return Navigator(_id='root', type='tab')  (*c)
 def Empty(): return Text('', hide=True)

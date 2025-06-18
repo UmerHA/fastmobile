@@ -21,11 +21,7 @@ app, rt = fast_app()
 
 @rt('/')
 def get():
-    return Screen(
-        Body(
-            Text('Hello, FastMobile!')
-        )
-    )
+    return Screen(Body(Text('👋 Hello from FastMobile')))
 
 serve(port=8085)
 ```
