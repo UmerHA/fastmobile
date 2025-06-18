@@ -5,8 +5,12 @@
 #   - possible to define styles in a component? otherwise components not possible
 #   - styling: err as state, like focused?
 #   - convencience for borderColor, similar to margin/padding?
+#   - auto-flex = 1 body,view,img; also in href-style?
+#   - of only single a, else kw: if a str, then style?
 # - auto add navigator (when?)
 # - local caching?
+# - parse str to txt when creating FT via curry
+# ! auto add href_style that inherits some layout styles
 
 import types
 from functools import partial
@@ -33,10 +37,19 @@ def _id_from_str(t,c,kw):
     if len(c)>0 and isinstance(c[0], str): kw['id'],c = c[0],c[1:]
     return t,c,kw
 
+def _expand_spacing(s):
+    xs = str(s).split()
+    if any(o[0] in 'trbl' for o in xs): return {o[0]: int(o[1:]) for o in xs}        
+    xs = [int(o) for o in xs]
+    xs = {1:xs*4, 2:xs*2, 3:xs+xs[1:2], 4:xs}[len(xs)]
+    return dict(zip('trbl', xs))
+def _spacing(prefix, o):
+    nms = {o[0]:prefix+o.capitalize() for o in ['top','right','bottom','left']}
+    return {nms[k]:v for k,v in _expand_spacing(o).items()}
 def _expand_margin_padding(t,c, kw):
     m,p = kw.pop('margin', None), kw.pop('padding', None)
-    m = margin(m)  if m else {}
-    p = padding(p) if p else {}
+    m = _spacing('margin',  m) if m else {}
+    p = _spacing('padding', p) if p else {}
     return t,c, {**kw, **m, **p}
 
 def _wrap_str(t,c,kw):
@@ -60,6 +73,10 @@ def _parse_svg(t,c,kw):
     svg = Path(src).read_text()
     return 'view',(NotStr(svg),)+c,kw
 
+def _add_default_key(t,c,kw):
+    if 'id' in kw and 'key' not in kw: kw['key'] = kw['id']
+    return t,c,kw
+
 def _preproc(t, c, kw):
     if len(c)==1 and isinstance(c[0], (types.GeneratorType, map, filter)): c = tuple(c[0])
     kw = {_fix_k(k): _fix_v(v) for k,v in kw.items()}
@@ -67,6 +84,7 @@ def _preproc(t, c, kw):
         'styles': [_parse_style_dict],
         'style':  [_id_from_str, _expand_margin_padding],
         'image':  [_expand_src, _parse_svg],
+        'item':   [_add_default_key]
     }
     tfms = tfms.get(t, []) + ([_wrap_str] if t not in ['text','image'] else [])
     for o in tfms: t, c, kw = o(t, c, kw)
@@ -81,29 +99,27 @@ def hxml_name(o):
 tags = [
     'Behavior',
     'Doc', 'Screen', 'Header', 'Body', 'View', 'Text', 'Img', 'List', 'SectionList', 'SectionTitle', 'Item', 'Spinner',
-    'Form', 'TextField', 'TextArea', 'SelectSingle', 'SelectMultiple', 'Option',
+    'Form', 'TextField', 'SelectSingle', 'SelectMultiple', 'Option',
     'Styles', 'Style', 'Modifier',
     'Navigator', 'NavRoute'
 ]
-_g = globals()
-for o in tags: _g[o] = partial(ft_hxml, hxml_name(o))
+for o in tags: globals()[o] = partial(ft_hxml, hxml_name(o))
 
 # # Convenience functions
-def WhenFocused(**kw): return Modifier(focused='true')(Style(**kw))
+def WhenFocused(**kw):  return Modifier(focused='true') (Style(**kw))
+def WhenSelected(**kw): return Modifier(selected='true')(Style(**kw))
+def WhenPressed(**kw):  return Modifier(pressed='true')(Style(**kw))
 def StackNav(*c): return Navigator(_id='root', type='stack')(*c)
 def TabNav(*c):   return Navigator(_id='root', type='tab')  (*c)
-
-def _expand_spacing(s):
-    xs = str(s).split()
-    if any(o[0] in 'trbl' for o in xs): return {o[0]: int(o[1:]) for o in xs}        
-    xs = [int(o) for o in xs]
-    xs = {1:xs*4, 2:xs*2, 3:xs+xs[1:2], 4:xs}[len(xs)]
-    return dict(zip('trbl', xs))
-def _spacing(prefix, o):
-    nms = {o[0]:prefix+o.capitalize() for o in ['top','right','bottom','left']}
-    return {nms[k]:v for k,v in _expand_spacing(o).items()}
-margin  = partial(_spacing, 'margin')
-padding = partial(_spacing, 'padding')
+def Empty(): return Text('', hide=True)
+def Back(**kw): return Behavior(action='back',**kw)
+def Dispatch(event_name, **kw): return Behavior(action='dispatch-event', event_name=event_name, **kw)
+def On      (event_name, **kw): return Behavior(trigger='on-event',      event_name=event_name, **kw)
+def DispatchBack(event_name):
+    return View(
+        Dispatch(event_name=event_name, trigger='load'),
+        Back(trigger='load'))
+conveniences = 'WhenFocused WhenSelected WhenPressed StackNav TabNav Empty Back Dispatch On DispatchBack'.split(' ')
 
 # # Return xml
 def XMLResponse(o, *a, **kw):
@@ -120,6 +136,8 @@ def is_full_doc(o): return len(o)==1 and o[0].tag=='doc'
 
 @patch_module(fhcore)
 def _xt_cts(req, resp):
+    print(f'> Request Header: {req.headers}')
+    if hasattr(resp,'__ft__'): resp = resp.__ft__()
     resp = flat_tuple(resp) # why did we need this?
     resp = resp + tuple(getattr(req, 'injects', ()))
     http_hdrs,resp = partition(resp, risinstance(HttpHeader))
@@ -133,8 +151,7 @@ def _xt_cts(req, resp):
         resp = Doc(bdy, **req.htmlkw)
     else:
         resp = View(*resp) if len(resp)>1 else resp[0]
-    if hasattr(resp,'__ft__'): resp = resp.__ft__()
     resp.xmlns='https://hyperview.org/hyperview'
     return fhcore._to_xml(req, resp, indent=fh_cfg.indent), http_hdrs, ts
 
-__all__ = tags + ['WhenFocused', 'StackNav', 'TabNav', 'fast_app', 'serve']
+__all__ = tags + conveniences + ['fast_app', 'serve']
