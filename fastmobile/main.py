@@ -15,19 +15,13 @@
 import types
 from functools import partial
 from pathlib import Path
-from fastcore.basics import camel2words
-from fastcore.xml import to_xml, FT, _flatten_tuple
 from starlette.responses import Response
+from fastcore.basics import camel2words
+from fastcore.xml import FT, _flatten_tuple
+from fasthtml.core import _part_resp, _to_xml, flat_tuple, fh_cfg
+from fasthtml.fastapp import fast_app as fh_fast_app
 from fasthtml.common import *
-import fasthtml.core as fhcore
 
-
-# # Helpers
-def patch_module(mod):
-    def _inner(f):
-        setattr(mod, f.__name__, f)
-        return f
-    return _inner
 
 # # Create tags
 def _fix_k(o): return o.lstrip('_').replace('_','-')
@@ -121,37 +115,32 @@ def DispatchBack(event_name):
         Back(trigger='load'))
 conveniences = 'WhenFocused WhenSelected WhenPressed StackNav TabNav Empty Back Dispatch On DispatchBack'.split(' ')
 
-# # Return xml
-def XMLResponse(o, *a, **kw):
-    o = '<?xml version="1.0" encoding="UTF-8"?>' + to_xml(o)
-    return Response(o, *a, media_type='application/xml', **kw)
-
-@patch_module(fhcore)
-def _xt_resp(req, resp):
-    cts,http_hdrs,tasks = _xt_cts(req, resp)
-    return XMLResponse(cts, headers=http_hdrs, background=tasks)
-
-def is_fragment_request(req): return 'fragment' in req.headers['accept']
+# # Return HXML
+def is_fragment_request(req): return 'fragment' in req.headers.get('accept', '')
 def is_full_doc(o): return len(o)==1 and o[0].tag=='doc'
 
-@patch_module(fhcore)
-def _xt_cts(req, resp):
-    print(f'> Request Header: {req.headers}')
-    if hasattr(resp,'__ft__'): resp = resp.__ft__()
-    resp = flat_tuple(resp) # why did we need this?
-    resp = resp + tuple(getattr(req, 'injects', ()))
-    http_hdrs,resp = partition(resp, risinstance(HttpHeader))
-    http_hdrs = {o.k:str(o.v) for o in http_hdrs}
-    tasks,bdy = partition(resp, risinstance(BackgroundTask))
-    ts = BackgroundTasks()
-    for t in tasks: ts.tasks.append(t)
-    if resp and not is_fragment_request(req) and not is_full_doc(resp):
+def _to_hxml_response(resp, req):
+    "After-ware: turn any FT tree into a Hyperview XML `Response`."
+    if isinstance(resp, Response):  return resp
+    # Pull out background tasks and extra headers
+    bdy, kw = _part_resp(req, resp)
+    hdrs = kw.get('headers', {})
+    background = kw.get('background', None)
+    bdy = flat_tuple(bdy)
+    # Hyperview rules
+    if resp and not is_fragment_request(req) and not is_full_doc(bdy):
         # todo: build support for header/footer back in. how do these relate to screen?
         if not any(getattr(o, 'tag', '')=='screen' for o in bdy): bdy = Screen(*bdy)
-        resp = Doc(bdy, **req.htmlkw)
+        bdy = Doc(bdy, **req.htmlkw)
     else:
-        resp = View(*resp) if len(resp)>1 else resp[0]
-    resp.xmlns='https://hyperview.org/hyperview'
-    return fhcore._to_xml(req, resp, indent=fh_cfg.indent), http_hdrs, ts
+        bdy = View(*resp) if len(bdy)>1 else bdy[0]
+    bdy.xmlns = 'https://hyperview.org/hyperview'
+    xml = '<?xml version="1.0" encoding="UTF-8"?>' + _to_xml(req, bdy, indent=fh_cfg.indent)
+    return Response(xml, media_type='application/xml', headers=hdrs, background=background)
+
+def fast_app(*a, **kw):
+    app, *rest = fh_fast_app(*a, **kw, default_hdrs=False)
+    app.after.append(_to_hxml_response)
+    return app,*rest
 
 __all__ = tags + conveniences + ['fast_app', 'serve']

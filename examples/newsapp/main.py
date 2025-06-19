@@ -1,14 +1,3 @@
-### Aim: I will access news/weather and show it on the first screen - Done
-# subtasks:
-#   - select and show weather data in card of screen - Done
-#   - access News API data - Done
-#   - show politics news data in different cards on screen - Done
-#   - make the news scrollable - Done
-#   - If a news card is clicked, create a full page news screen for it + back button
-#   - create two other screens I can navigate to
-#   - show on 2nd screen tech news
-#   - show on 3rd screen economics news
-
 from fastmobile import *
 import requests
 from datetime import datetime
@@ -18,8 +7,6 @@ from pathlib import Path
 WEATHER_API_KEY = "74b36255438c43f9b7f201327252004"
 DEFAULT_LOCATION = "New York"  # Default location for weather
 GNEWS_API_KEY = "22f8dc9c9fcc39942846a8c69bc30d94"
-# PIC_DIR = Path("images")
-# PIC = list(PIC_DIR.glob("*.jp*g"))+list(PIC_DIR.glob("*.png"))
 
 # Simple function to get weather data
 def get_weather(location=DEFAULT_LOCATION):
@@ -284,49 +271,34 @@ sty = Styles(
 )
 
 def weather_card(weather_data):
-    """Create a visually appealing compact weather card component"""
+    "Create a visually appealing compact weather card component"
     location_data = weather_data["location"]
     current = weather_data["current"]
-    
-    # Use a shorter date format to save space
-    current_date = datetime.now().strftime("%d %b %Y")
-    
-    return View(
+
+    return View(style="weather-card")(
         # Location and date row
-        View(
+        View(style="location-row")(
             Text(location_data["name"], style="location"),
-            Text(current_date, style="date"),
-            style="location-row"
+            Text(datetime.now().strftime("%d %b %Y"), style="date")
         ),
-        
         # Combined temperature and condition row to save vertical space
-        View(
+        View(style="temp-condition-row")(
             View(
                 Text(f"{int(current['temp_c'])}°C", style="temp-main"),
                 Text(f"Feels like {int(current['feelslike_c'])}°C", style="temp-feels"),
             ),
             Text(current["condition"]["text"], style="condition-text"),
-            style="temp-condition-row"
         ),
-        
         # Weather details row
-        View(
+        View(style="details-row")(
             # Humidity detail
-            View(
+            View(style="detail-item")(
                 Text(f"{current['humidity']}%", style="detail-value"),
-                Text("Humidity", style="detail-label"),
-                style="detail-item"
-            ),
+                Text("Humidity", style="detail-label")),
             # Wind detail
-            View(
+            View(style="detail-item")(
                 Text(f"{current['wind_kph']} km/h", style="detail-value"),
-                Text("Wind", style="detail-label"),
-                style="detail-item"
-            ),
-            style="details-row"
-        ),
-        style="weather-card"
-    )
+                Text("Wind", style="detail-label"))))
 
 def news_card(article):
     """Create a news card component"""
@@ -345,8 +317,6 @@ def news_card(article):
             style="news-content"
         ),
         style="news-card",
-        # href=f"/article?url={article['url']}&title={article['title']}&source={article['source']['name']}&date={article['publishedAt']}&description={article['description']}"
-        # href=f"/article?url={article['url']}&title={article['title']}"
         href=f"/article/{article["title"]}"
     )
 
@@ -358,17 +328,14 @@ def get():
 def get():
     # Get weather data for the default location
     weather_data = get_weather()
-    
     # Get news data
     news_articles = get_news()
-    
     return sty, Screen(
         Body(
             View(
                 # Weather section
                 Text('Your Weather', style="screen-title"),
                 weather_card(weather_data),
-                
                 # Optional: Add a search box for other locations
                 View(
                     TextField(placeholder="Enter city name...", style="search-input", id="location"),
@@ -381,15 +348,12 @@ def get():
                     ),
                     style="search-box"
                 ),
-                
                 # Container for updated weather after search
                 View(id="weather-container"),
-                
                 # News section
                 Text('Latest News', style="section-title"),
                 # Add news cards
                 *(news_card(article) for article in news_articles),
-                
                 style="base",
                 scroll="true"  # Make the content scrollable
             )
@@ -437,7 +401,6 @@ def get(title: str):
                 # Back button
                 View(
                     View(Img(source="icons/back.svg", style="back"), href="/tab-1", action="back", style="back-btn"),
-                    # Text("my title : "+title, style="base")
                 ),
                 # Article content
                 View(
