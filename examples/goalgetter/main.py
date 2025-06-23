@@ -60,11 +60,10 @@ def mk_input(typ='y'): return TextField(id=f'txt-input-{typ}', name='txt', value
 def mk_form(typ='y'):
     return Form(
         mk_input(typ),
-        View(Button('Add Goal', id='submit-btn'),
+        View(
+            Button('Add Goal', id='submit-btn'),
             Behavior(trigger='press', href=f'/add-{typ}',         action='replace', target=f'list-{typ}'),
-            Behavior(trigger='press', href=f'/clear-input-{typ}', action='replace', target=f'txt-input-{typ}'),
-        )
-    )
+            Behavior(trigger='press', href=f'/clear-input-{typ}', action='replace', target=f'txt-input-{typ}')))
 
 def mk_list(typ='y', msg=None):
     return View(id=f'list-{typ}')(
