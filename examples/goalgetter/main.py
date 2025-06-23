@@ -5,232 +5,121 @@ from datetime import datetime
 db = database('goals.db')
 
 goals = db.t.goals
-if goals not in db.t:
-    goals.create( id=int, title=str, type=str, created_at=datetime, done=bool, pk='id')
+if goals not in db.t: goals.create(id=int, title=str, type=str, created_at=datetime, done=bool, pk='id')
 
 Goal = goals.dataclass()
 app, rt = fast_app()
 
 sty = Styles(
-    Style("base", fontSize=24, padding=24),
-    Style("screen-title",
-        fontSize=32,              # Larger font for emphasis
-        fontWeight="700",         # Bold weight for prominence
-        color="#1a1a1a",         # Dark gray, not pure black for softer look
-        marginBottom=24,          # Good spacing below title
-        marginTop=12             # Some space at top
-    ),
-    Style("gl-txt",
-        fontSize=32,              # Larger font for emphasis
-        fontWeight="500",         # Bold weight for prominence
-        color="#1a1a1a",         # Dark gray, not pure black for softer look
-        marginBottom=4,          # Good spacing below title
-        marginTop=4             # Some space at top
-    ),
-    Style(id="Button", 
-        backgroundColor="#4778FF",
-        borderRadius=8,
-        padding=16,
-        alignItems="center",
-        justifyContent="center"
-    ),
-    Style(id="Button__Text",
-        color="white", 
-        fontSize=16,
-        fontWeight="bold"
-    ),
-    Style(Modifier(pressed="true"),
-        id="Button__Pressed",
-        backgroundColor="#2955CC",
-    ),
-    Style("btn-ct",
-        flexDirection="row",
-        gap=210,  # Space between buttons
-        # gap=16,  # Space between buttons
-        marginTop=16  # Optional top margin
-    ),
-    Style('container',
-        margin='36 12 12 12'),
-    Style('bdy-full', 
-        width='100%',
-        height='100%'
-    ),
-    Style("goals-container",
-        marginBottom=24
-    ),
-    Style("goal-row",
-    flexDirection="row",
-    justifyContent="space-between", 
-    alignItems="center",
-    padding="4",
-    marginBottom="8",  # Increased for better spacing
-    backgroundColor="#ffffff",  # White background
-    borderRadius="12",  # Increased roundness
-    borderWidth="1",  # Add subtle border
-    borderColor="#e5e7eb", # Light gray border
-    shadowColor="#000000",  # Add subtle shadow
-    shadowOpacity=0.1,
-    shadowRadius=8,
-    shadowOffsetY=2
-)
+    Style('body', fontSize=16, padding='t16 b16 l12 r12', backgroundColor='#F8FAFC', width='100%', height='100%'),
+    Style('title', fontSize=34, fontWeight='700', color='#1F2937', margin='t16 b24'),
+    Style('goal-txt', fontSize=16, fontWeight='500', color='#1F2937'),
+    Style('btn', backgroundColor='#2563EB', borderRadius=10, padding='t14 b14 l20 r20', alignItems='center', justifyContent='center'),
+    Style('btn-txt', color='#FFFFFF', fontSize=16, fontWeight='600'),
+    Style(Modifier(pressed='true'), 'btn-pressed', backgroundColor='#1E40AF'),
+    Style('btn-ct', flexDirection='row', justifyContent='space-between', margin='t24'),
+    Style('goals-container', margin='b24'),
+    Style('goal-row',
+          flexDirection='row',
+          justifyContent='space-between',
+          alignItems='center',
+          padding=12,
+          margin='b8',
+          backgroundColor='#FFFFFF',
+          borderRadius=8,
+          borderWidth=1,
+          borderColor='#E5E7EB',
+          shadowColor='#000000',
+          shadowOpacity=0.05,
+          shadowRadius=4,
+          shadowOffsetY=2,
+          elevation=1),
+    Style('txt-input',
+          backgroundColor='#FFFFFF',
+          borderRadius=8,
+          padding='t14 b14 l20 r20',
+          margin='t24 b24',
+          borderWidth=1,
+          borderColor='#E5E7EB')
 )
 
-def Button(text, href=None, action="push", **kwargs):
-    button = View(
-        Text(text, style="Button__Text"),
-        style="Button Button__Pressed",
-        **kwargs
-    )
+def Button(text, href=None, action='push', **kwargs):
+    button = View(style='btn btn-pressed')(
+        Text(text, style='btn-txt'),
+        **kwargs)
+    if not href: return button
+    return View(Behavior(trigger='press', href=href, action=action), button)
 
-    if href:
-        return View(
-            Behavior(trigger="press", href=href, action=action),
-            button)
-    return button
+def NavBtns(prev, next):
+    return  View(style='btn-ct')(
+        Button('Back', href=prev),
+        Button('Next', href=next))
 
-def NavBtn(href_f, href_b):
-    return  View(Button('Back', href=href_b),
-                 Button('Next', href=href_f),
-                 style="btn-ct")
+def mk_input(typ='y'): return TextField(id=f'txt-input-{typ}', name='txt', value='', placeholder='Enter your goals', style='txt-input')
 
-def mk_frm(txt_fld="yearly"):
-    if txt_fld=="yearly":
-        name="yearly_goal" 
-        placeholder="Enter your yearly goals"
-        _id="y-txt-fld"
-        href="/add-yearly-goal"
-        target="yg-lst"
-        clhref = '/y-clear-input'
-
-    elif txt_fld=="quarterly":
-        name="quarterly_goal" 
-        placeholder="Enter your goals for the next quarter"
-        _id="q-txt-fld"
-        href="/add-quarterly-goal"
-        target="qg-lst"
-        clhref = '/q-clear-input'
-
-    elif txt_fld=="weekly":
-        name = "weekly_goal" 
-        placeholder="Enter your weekly targets"
-        _id="w-txt-fld"
-        href="/add-weekly-goal"
-        target="wg-lst"
-        clhref = '/w-clear-input'
-
-    return Form(style="base")(
-        TextField(name=name, placeholder=placeholder,id=_id,style="base"),
-        View(Button("Add Goal", id='submit-btn'),
-            Behavior(trigger="press", href=href,   action="replace", target=target ),
-            Behavior(trigger="press", href=clhref, action="replace", target=_id ),
+def mk_form(typ='y'):
+    return Form(
+        mk_input(typ),
+        View(Button('Add Goal', id='submit-btn'),
+            Behavior(trigger='press', href=f'/add-{typ}',         action='replace', target=f'list-{typ}'),
+            Behavior(trigger='press', href=f'/clear-input-{typ}', action='replace', target=f'txt-input-{typ}'),
         )
     )
 
-def mk_yglst(msg=None, gl_type='yearly'):
-    hide_vw = "false" if msg else "true"
-    if gl_type=="yearly":
-        _id = 'yg-lst'
-        dhref = f"/delete-y/"
-    elif gl_type=="quarterly":
-        _id = 'qg-lst'
-        dhref = f"/delete-q/"
-    elif gl_type=="weekly":
-        _id = 'wg-lst'
-        dhref = f"/delete-w/"
+def mk_list(typ='y', msg=None):
+    return View(id=f'list-{typ}')(
+        *[
+            View(style='goal-row')(
+                Text(goal.title, style='goal-txt'),
+                View(
+                    Button('X'),
+                    Behavior(trigger='press', href=f'/delete-{typ}/{goal.id}', action='replace', target=f'list-{typ}')
+                ), 
+            ) for goal in goals('type = ?', [typ], order_by='created_at')
+        ], 
+        View(msg, hide=msg is None))
 
-    return View(*[
-        View(
-            View(Text(goal.title, style="gl-text")),
-            View(style="goal-row")(
-                Button("X"),
-                Behavior( trigger="press", href=dhref+str(goal.id), action="replace", target=_id )
-            ), 
-        ) for goal in goals('type = ?', [gl_type], order_by='created_at')
-    ], View(msg, hide=hide_vw, style="base"), id=_id, style="base")
+def screen(title, typ, prev, next):
+    return Screen(
+        sty,
+        Body(style='body')(
+            View(Text(title, style='title')),
+            mk_list(typ=typ),
+            mk_form(typ),
+            NavBtns(f'/show-{prev}', f'/show-{next}')))
+
+def add_goal(txt:str, typ:str):
+    limit = {'y': 3, 'q': 5, 'w': 3}
+    count = len(list(goals('type = ?', [typ])))
+    if count >= limit[typ]:
+        typ_long = {'y': 'yearly', 'q': 'quarterly', 'w': 'weekly'}
+        msg = f'Keep it simple! You can only add {limit[typ]} {typ_long[typ]} goals.'
+        return mk_list(typ, msg)
+    goals.insert(Goal(title=txt, type=typ, created_at=datetime.now().isoformat(), done=False))
+    return mk_list(typ)
+
+def delete_goal(id_:int, typ:str):
+    goals.delete(id_)
+    return mk_list(typ)
 
 
 @rt('/')
-def get():
-    return Doc(StackNav(NavRoute(href='tab-1', id='tab-1')))
+def get(): return Doc(StackNav(NavRoute(href='show-y', id='y')))
 
-@rt('/tab-1')
-def get():
-    yearly_goals = list(goals('type = ?', ['yearly'], order_by='created_at'))
-    return Screen(
-               sty,
-               Body(
-                   View(Text('Your Yearly Goals', style="screen-title")),
-                   mk_yglst(),
-                   mk_frm(txt_fld="yearly"),
-                   NavBtn('/tab-2', '/tab-3'),
-                   style="base"))
+@rt('/show-{typ}')
+def get(typ:str):
+    title, prev, next = {
+        'y': ('Your Yearly Goals',    'm', 'w'),
+        'q': ('Your Quarterly Goals', 'w', 'y'),
+        'w': ('Your Weekly Focus',    'y', 'm')
+    }[typ]
+    return screen(title, typ, prev, next)
 
-@rt('/tab-2')
-def get():
-    quarterly_goals = list(goals('type = ?', ['quarterly'], order_by='created_at'))
-    return Screen(
-                sty,
-                Body(
-                    View(Text('Your Quarterly Goals', style="screen-title")),
-                    mk_yglst(gl_type='quarterly'),
-                    mk_frm(txt_fld="quarterly"),
-                    NavBtn('/tab-3', '/tab-1'),
-                    scroll='true',
-                    style="base"))
-
-@rt('/tab-3')
-def get():
-    weekly_goals = list(goals('type = ?', ['weekly'], order_by='created_at'))
-    return Screen(
-                sty,
-                Body(
-                    View(Text('Your Weekly Focus', style="screen-title")),
-                    mk_yglst(gl_type="weekly"),
-                    mk_frm(txt_fld="weekly"),
-                    NavBtn('/tab-1', '/tab-2'),
-                    style="base"))
-
-@rt('/add-yearly-goal') 
-def get(yearly_goal: str):
-    count = len(list(goals('type = ?', ['yearly'])))
-    if count >= 3: return View(mk_yglst("You Cannot Add More Than 3 Yearly Goals!!!"))
-    goals.insert(Goal( title=yearly_goal, type='yearly', created_at=datetime.now().isoformat(), done=False ))
-    return mk_yglst()
-    
-@rt('/add-quarterly-goal') 
-def get(quarterly_goal: str):
-    count = len(list(goals('type = ?', ['quarterly'])))
-    if count >= 5: return View(mk_yglst("You Cannot Add More Than 5 Quarterly Goals!!!", gl_type='quarterly'))
-    goals.insert(Goal( title=quarterly_goal, type='quarterly', created_at=datetime.now().isoformat(), done=False ))
-    return mk_yglst(gl_type="quarterly")
-
-@rt('/add-weekly-goal') 
-def get(weekly_goal: str):
-    count = len(list(goals('type = ?', ['weekly'])))
-    if count >= 3: return View(mk_yglst("You cannot add more than 3 weekly targets!", gl_type='weekly'))
-    goals.insert(Goal(title=weekly_goal, type='weekly', created_at=datetime.now().isoformat(), done=False))
-    return mk_yglst(gl_type="weekly")
-
-@rt('/delete-y/{goal_id}')
-def get(goal_id: int):
-    goals.delete(goal_id)
-    return mk_yglst(gl_type="yearly")
-
-@rt('/delete-q/{goal_id}')
-def get(goal_id: int):
-    goals.delete(goal_id)
-    return mk_yglst(gl_type="quarterly")   
-    
-@rt('/delete-w/{goal_id}')
-def get(goal_id: int):
-    goals.delete(goal_id)
-    return mk_yglst(gl_type="weekly")   
-
-@rt('/y-clear-input')
-def get(): return TextField(name="yearly_goal",    placeholder="Enter your goals", id="y-txt-fld", style="base")
-@rt('/q-clear-input')
-def get(): return TextField(name="quarterly_goal", placeholder="Enter your goals", id="q-txt-fld", style="base")
-@rt('/w-clear-input')
-def get(): return TextField(name="weekly_goal",    placeholder="Enter your goals", id="w-txt-fld", style="base")
+@rt('/add-{typ}') 
+def get(txt:str, typ:str): return add_goal(txt, typ)
+@rt('/delete-{typ}/{id}')
+def get(id:int, typ:str): return delete_goal(id, typ)
+@rt('/clear-input-{typ}')
+def get(typ:str): return mk_input(typ)
 
 serve(port=8085)

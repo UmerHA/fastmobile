@@ -162,3 +162,5 @@ cython_debug/
 
 *.sesskey
 *.db
+*.db-wal
+*.db-shm
