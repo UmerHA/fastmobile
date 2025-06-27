@@ -177,7 +177,7 @@ def Feed():
             for i, (u, p) in enumerate(zip(users, reversed(PIC[:6]))))
 
 @rt('/')
-def get(): return Doc(StackNav(NavRoute(href='/home', id='home')))
+def get(): return StackNav(NavRoute(href='/home', id='home'))
 
 @rt('/home')
 def get(): return Screen(
