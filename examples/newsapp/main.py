@@ -133,7 +133,7 @@ def NewsCard(article):
             Text(article['description'], numberOfLines=3, style='news-description')))
 
 @rt('/')
-def get(): return Doc(StackNav(NavRoute(href='tab-1', id='tab-1')))
+def get(): return StackNav(NavRoute(href='tab-1', id='tab-1'))
 
 @rt('/tab-1')
 def get():
