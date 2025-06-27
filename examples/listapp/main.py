@@ -79,7 +79,7 @@ def mk_list(typ='y', msg=None):
         View(msg, hide=msg is None))
 
 @rt('/')
-def get(): return StackNav(NavRoute(href='show-y', id='y')) # Doc
+def get(): return StackNav(NavRoute(href='show-y', id='y'))
 
 @rt('/show-{typ}')
 def get(typ:str):
