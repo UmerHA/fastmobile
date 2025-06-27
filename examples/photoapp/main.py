@@ -188,7 +188,7 @@ def get(): return Screen(
             View(scroll='true')(
                 Feed()))))
 
-def stat(val, label):
+def Stat(val, label):
     return View(style='stat-column')(
         Text(f'{val}', style='stat-number'),
         Text(label, style='stat-label'))
@@ -206,9 +206,9 @@ def get(uid: int):
             View(style='profile-section')(
                 Img(source=u.file, style='profile-pic'),
                 View(style='profile-stats')(
-                    stat(u.posts, 'posts'),
-                    stat(u.follower, 'followers'),
-                    stat(u.following, 'following'))), 
+                    Stat(u.posts, 'posts'),
+                    Stat(u.follower, 'followers'),
+                    Stat(u.following, 'following'))), 
             View(style='bio-section')(
                 Text(u.name.upper(), style='bio-name'),
                 Text('I\'m a synthetic life form with artificial intelligence.\nLove long walks on the beach and pumpkin spice everything!', style='bio-text')),
