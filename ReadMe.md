@@ -51,7 +51,7 @@ You still get native feel, but your UI ships at web speed – no app‑store del
 The Hyperview shell is a thin RN wrapper; your Python code stays on the server.
 
 ### Can I mix FastHTML & FastMobile?
-Partly. While you can't use FastHTML components because as Hyperview only supports a restricted set of tags, you can use the other mechanisms FastHTML has like `sessions`, `databases`, `beforeware` etc.
+Partly. While you can't use FastHTML components because Hyperview only supports a restricted set of tags, you can use the other mechanisms FastHTML has like `sessions`, `databases`, `beforeware` etc.
 
 ## 5. Further reading
 - Hyperview docs ([hyperview.org](https://hyperview.org/))

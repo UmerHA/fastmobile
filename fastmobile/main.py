@@ -130,7 +130,7 @@ def _to_hxml_response(resp, req):
     # Hyperview rules
     if resp and not is_fragment_request(req) and not is_full_doc(bdy):
         # todo: build support for header/footer back in. how do these relate to screen?
-        if not any(getattr(o, 'tag', '')=='screen' for o in bdy): bdy = Screen(*bdy)
+        if not any(getattr(o, 'tag', '') in ['screen','navigator'] for o in bdy): bdy = Screen(*bdy)
         bdy = Doc(bdy, **req.htmlkw)
     else:
         bdy = View(*resp) if len(bdy)>1 else bdy[0]

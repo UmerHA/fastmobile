@@ -53,7 +53,6 @@ def get_news(category='general', max_results=5):
 
 app, rt = fast_app()
 
-# Enhanced styles with weather card styling - more compact version
 sty = Styles(
     Style('base', fontSize=18, padding=16, backgroundColor='#f5f7fa' ),
     Style('screen-title', fontSize=22, fontWeight='bold', color='#333', marginBottom=12, textAlign='center' ),

@@ -78,7 +78,16 @@ def mk_list(typ='y', msg=None):
         ], 
         View(msg, hide=msg is None))
 
-def screen(title, typ, prev, next):
+@rt('/')
+def get(): return StackNav(NavRoute(href='show-y', id='y')) # Doc
+
+@rt('/show-{typ}')
+def get(typ:str):
+    title, prev, next = {
+        'y': ('Your Yearly Goals',    'm', 'w'),
+        'q': ('Your Quarterly Goals', 'w', 'y'),
+        'w': ('Your Weekly Focus',    'y', 'm')
+    }[typ]
     return Screen(
         sty,
         Body(style='body')(
@@ -87,7 +96,8 @@ def screen(title, typ, prev, next):
             mk_form(typ),
             NavBtns(f'/show-{prev}', f'/show-{next}')))
 
-def add_goal(txt:str, typ:str):
+@rt('/add-{typ}') 
+def get(txt:str, typ:str):
     limit = {'y': 3, 'q': 5, 'w': 3}
     count = len(list(goals('type = ?', [typ])))
     if count >= limit[typ]:
@@ -97,27 +107,11 @@ def add_goal(txt:str, typ:str):
     goals.insert(Goal(title=txt, type=typ, created_at=datetime.now().isoformat(), done=False))
     return mk_list(typ)
 
-def delete_goal(id_:int, typ:str):
-    goals.delete(id_)
+@rt('/delete-{typ}/{id}')
+def get(id:int, typ:str):
+    goals.delete(id)
     return mk_list(typ)
 
-
-@rt('/')
-def get(): return Doc(StackNav(NavRoute(href='show-y', id='y')))
-
-@rt('/show-{typ}')
-def get(typ:str):
-    title, prev, next = {
-        'y': ('Your Yearly Goals',    'm', 'w'),
-        'q': ('Your Quarterly Goals', 'w', 'y'),
-        'w': ('Your Weekly Focus',    'y', 'm')
-    }[typ]
-    return screen(title, typ, prev, next)
-
-@rt('/add-{typ}') 
-def get(txt:str, typ:str): return add_goal(txt, typ)
-@rt('/delete-{typ}/{id}')
-def get(id:int, typ:str): return delete_goal(id, typ)
 @rt('/clear-input-{typ}')
 def get(typ:str): return mk_input(typ)
 

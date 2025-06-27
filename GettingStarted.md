@@ -31,7 +31,7 @@ from fastmobile import *
 app, rt = fast_app()
 
 @rt('/')
-def home():
+def get():
     return Screen(Body(Text('👋 Hello from FastMobile')))
 
 serve(port=8085)
