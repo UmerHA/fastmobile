@@ -18,7 +18,6 @@ def get_weather(location=DEFAULT_LOCATION):
         if response.status_code == 200: return response.json()
     except Exception as e:
         print(f'Error fetching weather: {e}')
-    
     # Return dummy data if request fails
     return {
         'location': {'name': location},
@@ -38,7 +37,6 @@ def get_news(category='general', max_results=5):
         if response.status_code == 200: return response.json()['articles']
     except Exception as e:
         print(f'Error fetching news: {e}')
-    
     # Return dummy data if request fails
     return [
         {
@@ -105,7 +103,7 @@ def WeatherCard(weather_data):
         View(style='location-row')(
             Text(location_data['name'], style='location'),
             Text(datetime.now().strftime('%d %b %Y'), style='date')),
-        # Combined temperature and condition row to save vertical space
+        # Temperature and condition row
         View(style='temp-condition-row')(
             View(
                 Text(f'{int(current['temp_c'])}°C', style='temp-main'),
@@ -114,12 +112,10 @@ def WeatherCard(weather_data):
         ),
         # Weather details row
         View(style='details-row')(
-            # Humidity detail
-            View(style='detail-item')(
+            View(style='detail-item')( # Humidity
                 Text(f'{current['humidity']}%', style='detail-value'),
                 Text('Humidity', style='detail-label')),
-            # Wind detail
-            View(style='detail-item')(
+            View(style='detail-item')( # Wind
                 Text(f'{current['wind_kph']} km/h', style='detail-value'),
                 Text('Wind', style='detail-label'))))
 
@@ -151,7 +147,6 @@ def get():
                         Behavior(trigger='press', href='/search-weather', action='replace', target='weather-container'))),
                 # News section
                 Text('Latest News', style='section-title'),
-                # Add news cards
                 *(NewsCard(o) for o in get_news()))))
 
 @rt('/search-weather')
@@ -160,9 +155,8 @@ def get(location:str=DEFAULT_LOCATION): return WeatherCard(get_weather(location)
 @rt('/article/{title}')
 def get(title: str):
     "Display a news article in detail"
-    news_articles = get_news()
-    article = next((a for a in news_articles if a['title']==title), None)
-    # If article not found, use placeholder data
+    article = next((a for a in get_news() if a['title']==title), None)
+    # Placeholder if article not found
     if not article:
         article = {
             'title': title,
